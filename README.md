@@ -3,7 +3,7 @@
 **image-preview-studio** is a drop-in image editor for web and mobile browsers, with 14 adjustments.
 You can turn each tool on or off with `true` / `false`. The image is never stretched, and the UI is clean and touch friendly.
 
-![image-preview-studio editor](./docs/hero.png)
+![image-preview-studio editor](https://raw.githubusercontent.com/vasanthakumar2k/image-preview-studio/main/docs/hero.png)
 
 ```bash
 npm i image-preview-studio
@@ -42,7 +42,7 @@ npm i image-preview-studio
 
 ## Quick start
 
-![Quick start](./docs/hero.png)
+![Quick start](https://raw.githubusercontent.com/vasanthakumar2k/image-preview-studio/main/docs/hero.png)
 
 ```html
 <div id="editor" style="height: 600px"></div>
@@ -63,7 +63,7 @@ const editor = createImageStudio('#editor', {
 
 ## React / Next.js
 
-![React](./docs/hero.png)
+![React](https://raw.githubusercontent.com/vasanthakumar2k/image-preview-studio/main/docs/hero.png)
 
 ```tsx
 import { useRef } from 'react';
@@ -112,7 +112,7 @@ All props update live. If you change `tools`, `theme` or `src`, the editor updat
 
 ## All tools
 
-![All tools](./docs/all-tools.png)
+![All tools](https://raw.githubusercontent.com/vasanthakumar2k/image-preview-studio/main/docs/all-tools.png)
 
 | key | range | | key | range |
 |---|---|---|---|---|
@@ -131,7 +131,7 @@ Every tool starts at `0`, which means no change.
 
 ## Enable / disable tools
 
-![Only 4 tools enabled](./docs/tools-toggle.png)
+![Only 4 tools enabled](https://raw.githubusercontent.com/vasanthakumar2k/image-preview-studio/main/docs/tools-toggle.png)
 
 Pass `false` to hide a tool. A tool you don't mention is shown.
 
@@ -170,7 +170,7 @@ When only a few tools are left, the row centres itself.
 
 ## Light theme & accent colour
 
-![Light theme with red accent](./docs/light-theme.png)
+![Light theme with red accent](https://raw.githubusercontent.com/vasanthakumar2k/image-preview-studio/main/docs/light-theme.png)
 
 ```js
 createImageStudio('#editor', {
@@ -190,7 +190,7 @@ editor.update({ theme: 'dark', accent: '#16a34a' });
 
 ## Starting values & custom labels
 
-![Custom labels and starting values](./docs/labels-values.png)
+![Custom labels and starting values](https://raw.githubusercontent.com/vasanthakumar2k/image-preview-studio/main/docs/labels-values.png)
 
 ```js
 createImageStudio('#editor', {
@@ -210,11 +210,11 @@ A small dot shows on every tool that has been changed.
 
 **Portrait image (1080 × 1920) in a wide editor:**
 
-![Portrait fits without stretching](./docs/portrait-fit.png)
+![Portrait fits without stretching](https://raw.githubusercontent.com/vasanthakumar2k/image-preview-studio/main/docs/portrait-fit.png)
 
 **Small image (320 × 220) stays at its real size:**
 
-![Small image keeps real size](./docs/small-image.png)
+![Small image keeps real size](https://raw.githubusercontent.com/vasanthakumar2k/image-preview-studio/main/docs/small-image.png)
 
 ```js
 createImageStudio('#editor', {
@@ -230,7 +230,7 @@ Set `upscale: true` if you want small images to grow and fill the space.
 
 ## Mobile
 
-<img src="./docs/mobile.png" width="320" alt="Mobile view" />
+<img src="https://raw.githubusercontent.com/vasanthakumar2k/image-preview-studio/main/docs/mobile.png" width="320" alt="Mobile view" />
 
 ```css
 #editor { height: 100dvh; }
@@ -248,7 +248,7 @@ It works in mobile browsers, PWAs, **Ionic / Capacitor**, and a **React Native `
 
 ## Hold to compare
 
-![Hold Compare to see the original](./docs/compare.png)
+![Hold Compare to see the original](https://raw.githubusercontent.com/vasanthakumar2k/image-preview-studio/main/docs/compare.png)
 
 Press and hold **Compare** to see the original image. Let go to see your edits again.
 
@@ -263,7 +263,7 @@ createImageStudio('#editor', {
 
 ## Without header (minimal embed)
 
-![No header](./docs/no-header.png)
+![No header](https://raw.githubusercontent.com/vasanthakumar2k/image-preview-studio/main/docs/no-header.png)
 
 ```js
 createImageStudio('#editor', {
@@ -282,7 +282,7 @@ You can also hide individual buttons with `upload: false`, `reset: false`, `comp
 
 ## Empty state / upload
 
-![Empty state](./docs/empty-state.png)
+![Empty state](https://raw.githubusercontent.com/vasanthakumar2k/image-preview-studio/main/docs/empty-state.png)
 
 ```js
 const editor = createImageStudio('#editor');   // no src → "Choose image"
