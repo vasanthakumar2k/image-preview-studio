@@ -1,0 +1,49 @@
+{
+  "name": "image-preview-studio",
+  "version": "1.0.0",
+  "description": "Image preview studio: drop-in image editor for web & mobile: brightness, contrast, exposure, saturation, vibrance, temperature, tint, highlights, shadows, hue, fade, sharpness, vignette, grain. Enable/disable each tool with true/false. Vanilla JS + React.",
+  "license": "MIT",
+  "type": "module",
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "unpkg": "./dist/image-preview-studio.global.js",
+  "jsdelivr": "./dist/image-preview-studio.global.js",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
+    },
+    "./react": {
+      "types": "./dist/react.d.ts",
+      "import": "./dist/react.js",
+      "require": "./dist/react.cjs"
+    }
+  },
+  "files": ["dist", "README.md", "LICENSE"],
+  "sideEffects": false,
+  "scripts": {
+    "build": "tsup",
+    "prepublishOnly": "npm run build"
+  },
+  "peerDependencies": {
+    "react": ">=16.8"
+  },
+  "peerDependenciesMeta": {
+    "react": { "optional": true }
+  },
+  "devDependencies": {
+    "@types/react": "^18.3.0",
+    "react": "^18.3.0",
+    "tsup": "^8.3.0",
+    "typescript": "^5.6.0"
+  },
+  "keywords": [
+    "image-preview-studio", "image-preview", "image-studio", "photo-studio",
+    "image-editor", "photo-editor", "image-filter", "image-filters", "photo-filter",
+    "image-adjustment", "brightness", "contrast", "saturation", "exposure", "temperature",
+    "tint", "sharpness", "sharpen", "vignette", "grain", "hue", "highlights", "shadows",
+    "image-preview", "canvas", "react", "react-image-editor", "mobile", "responsive", "slider"
+  ]
+}

@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>image-preview-studio demo</title>
+<style>
+  html,body{margin:0;height:100%;background:#0a0b0e;font-family:system-ui,sans-serif}
+  .wrap{height:100dvh;max-width:980px;margin:0 auto;padding:16px;box-sizing:border-box;display:flex;flex-direction:column;gap:10px}
+  .bar{display:flex;gap:8px;flex-wrap:wrap;color:#aab}
+  .bar button{background:#1c2029;color:#dde;border:1px solid #2c3240;border-radius:8px;padding:6px 10px;font:inherit;font-size:12px;cursor:pointer}
+  #editor{flex:1;min-height:0}
+  @media (max-width:520px){.wrap{padding:0;gap:0}.bar{padding:8px}}
+</style></head>
+<body><div class="wrap">
+  <div class="bar">
+    <button data-img="land">Landscape image</button>
+    <button data-img="tall">Portrait image</button>
+    <button data-img="small">Small image</button>
+    <button id="theme">Toggle theme</button>
+    <button id="few">Only 4 tools</button>
+    <button id="all">All tools</button>
+  </div>
+  <div id="editor"></div>
+</div>
+<script>/*LIB*/</script>
+<script>
+function scene(w, h) {
+  const c = document.createElement('canvas'); c.width = w; c.height = h; const x = c.getContext('2d');
+  let g = x.createLinearGradient(0, 0, 0, h * .65);
+  g.addColorStop(0, '#2b6cb0'); g.addColorStop(.6, '#f6ad55'); g.addColorStop(1, '#fbd38d');
+  x.fillStyle = g; x.fillRect(0, 0, w, h);
+  x.fillStyle = '#fff5d6'; x.beginPath(); x.arc(w * .68, h * .5, Math.min(w, h) * .09, 0, 7); x.fill();
+  const hill = (y, col, amp, f) => { x.fillStyle = col; x.beginPath(); x.moveTo(0, h);
+    for (let i = 0; i <= w; i += 4) x.lineTo(i, y + Math.sin(i / w * f) * amp + Math.sin(i / w * f * 3.1) * amp * .3);
+    x.lineTo(w, h); x.fill(); };
+  hill(h * .62, '#6b46c1', h * .05, 7); hill(h * .7, '#38a169', h * .04, 9); hill(h * .8, '#22543d', h * .03, 13);
+  for (let i = 0; i < 40; i++) { x.fillStyle = `hsl(${(i * 37) % 360},80%,60%)`; x.fillRect(w * .05 + i * w * .022, h * .88, w * .015, h * .06); }
+  x.fillStyle = '#fff'; x.font = `bold ${Math.round(h * .05)}px system-ui`; x.fillText('image-preview-studio', w * .05, h * .1);
+  return c.toDataURL('image/jpeg', .92);
+}
+const imgs = { land: scene(2400, 1600), tall: scene(1080, 1920), small: scene(320, 220) };
+let theme = 'dark';
+const editor = ImagePreviewStudio.create('#editor', {
+  src: imgs.land,
+  title: 'Edit photo',
+  tools: { grain: true, hue: true },
+  values: { },
+  onChange: (v, t) => { window.__last = { v, t }; }
+});
+window.editor = editor;
+document.querySelectorAll('[data-img]').forEach(b => b.onclick = () => editor.setImage(imgs[b.dataset.img]));
+document.getElementById('theme').onclick = () => { theme = theme === 'dark' ? 'light' : 'dark'; editor.update({ theme }); };
+document.getElementById('few').onclick = () => editor.update({ tools: { brightness: true, contrast: true, saturation: true, sharpness: true,
+  exposure: false, vibrance: false, temperature: false, tint: false, highlights: false, shadows: false, hue: false, fade: false, vignette: false, grain: false } });
+document.getElementById('all').onclick = () => editor.update({ tools: {} });
+</script></body></html>
