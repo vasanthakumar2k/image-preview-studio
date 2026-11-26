@@ -1,6 +1,6 @@
 {
   "name": "image-preview-studio",
-  "version": "1.0.1",
+  "version": "1.1.0",
   "description": "Image preview studio: drop-in image editor for web & mobile: brightness, contrast, exposure, saturation, vibrance, temperature, tint, highlights, shadows, hue, fade, sharpness, vignette, grain. Enable/disable each tool with true/false. Vanilla JS + React.",
   "license": "MIT",
   "type": "module",

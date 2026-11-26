@@ -44,6 +44,24 @@ export interface ImageStudioOptions {
   title?: string;
   /** Show an "Open" button / empty state picker. Default `true`. */
   upload?: boolean;
+  /** Show a "Remove" button that clears the image. Default `false`. */
+  remove?: boolean;
+  /** Fixed width of the image container (CSS value or px number), e.g. `400` or `'100%'`. */
+  imageWidth?: string | number;
+  /** Fixed height of the image container (CSS value or px number), e.g. `300`. */
+  imageHeight?: string | number;
+  /** `contain` (default) shows the whole image; `cover` fills the container (pan to see the rest). */
+  fit?: 'contain' | 'cover';
+  /** Pinch / wheel to zoom, drag to pan, double-tap to toggle zoom. Default `true`. */
+  zoom?: boolean;
+  /** Maximum zoom factor. Default 8. */
+  maxZoom?: number;
+  /** Allow dropping an image file onto the editor. Default `true` (when `upload` is on). */
+  drop?: boolean;
+  /** Called when the user picks / drops a local file. */
+  onUpload?: (file: File) => void;
+  /** Called after the image is removed with the Remove button or `clear()`. */
+  onRemove?: () => void;
   /** Show the reset-all button. Default `true`. */
   reset?: boolean;
   /** Show the hold-to-compare button. Default `true`. */
@@ -161,7 +179,17 @@ export class ImageStudio {
   private scaleMax!: HTMLSpanElement;
   private toolbar!: HTMLDivElement;
   private toolBtns = new Map<ToolName, HTMLButtonElement>();
-  private headerBtns: Partial<Record<'reset' | 'compare' | 'download', HTMLButtonElement>> = {};
+  private headerBtns: Partial<Record<'reset' | 'compare' | 'download' | 'remove', HTMLButtonElement>> = {};
+
+  // zoom / pan state (translate is relative to the stage centre)
+  private z = 1;
+  private tx = 0;
+  private ty = 0;
+  private dispW = 0;
+  private dispH = 0;
+  private ptrs = new Map<number, { x: number; y: number }>();
+  private pinch: { d: number; mx: number; my: number } | null = null;
+  private tap = { t: 0, x: 0, y: 0, moved: false };
   private fileInput: HTMLInputElement | null = null;
 
   constructor(target: string | HTMLElement, options: ImageStudioOptions = {}) {
@@ -188,6 +216,7 @@ export class ImageStudio {
       const img = await loadSource(src);
       if (token !== this.loadToken) return;
       this.image = img;
+      this.z = 1; this.tx = 0; this.ty = 0;
       this.preparePreview();
       this.syncHeader();
       this.opts.onReady?.({ width: img.width, height: img.height });
@@ -195,6 +224,39 @@ export class ImageStudio {
       if (this.opts.onError) this.opts.onError(err);
       else console.error(err);
     }
+  }
+
+  /** Remove the current image and show the empty state. */
+  clear(): void {
+    ++this.loadToken;
+    this.image = null;
+    this.original = this.output = null;
+    this.comparing = false;
+    this.z = 1; this.tx = 0; this.ty = 0;
+    this.canvas.style.display = 'none';
+    this.canvas.style.transform = '';
+    this.empty.style.display = '';
+    this.badge.classList.remove('it-show');
+    this.headerBtns.compare?.classList.remove('it-pressed');
+    this.applyTransform();
+    this.syncHeader();
+    this.opts.onRemove?.();
+  }
+
+  /** Set zoom (1 = fit). Zooms around the centre. */
+  setZoom(zoom: number): void {
+    if (!this.image) return;
+    this.zoomAt(zoom, 0, 0);
+  }
+
+  getZoom(): number {
+    return this.z;
+  }
+
+  /** Back to zoom 1, centred. */
+  resetZoom(): void {
+    this.z = 1; this.tx = 0; this.ty = 0;
+    this.applyTransform();
   }
 
   getValues(): Values {
@@ -227,7 +289,7 @@ export class ImageStudio {
     const prevSrc = this.opts.src;
     this.opts = { ...this.opts, ...options };
     if (options.values) this.values = normalizeValues(options.values, this.values);
-    const rebuildKeys: (keyof ImageStudioOptions)[] = ['tools', 'labels', 'header', 'title', 'upload', 'reset', 'compare', 'download', 'theme', 'accent', 'height', 'activeTool'];
+    const rebuildKeys: (keyof ImageStudioOptions)[] = ['tools', 'labels', 'header', 'title', 'upload', 'reset', 'compare', 'download', 'remove', 'theme', 'accent', 'height', 'activeTool', 'imageWidth', 'imageHeight', 'fit', 'zoom', 'drop'];
     if (rebuildKeys.some((k) => k in options)) {
       this.root.innerHTML = '';
       this.toolBtns.clear();
@@ -302,7 +364,8 @@ export class ImageStudio {
     this.root.className = 'it-root' + (o.theme === 'light' ? ' it-light' : '');
     if (o.accent) this.root.style.setProperty('--it-accent', o.accent);
     else this.root.style.removeProperty('--it-accent');
-    this.root.style.height = o.height ?? '100%';
+    this.root.style.height = o.height ?? (o.imageHeight != null ? 'auto' : '100%');
+    this.root.style.minHeight = o.height == null && o.imageHeight != null ? '0' : '';
 
     const tools = o.tools ?? {};
     this.enabled = TOOLS.filter((t) => tools[t.name] !== false).map((t) => ({
@@ -321,7 +384,7 @@ export class ImageStudio {
       fi.style.display = 'none';
       fi.addEventListener('change', () => {
         const f = fi.files?.[0];
-        if (f) this.setImage(f);
+        if (f) this.openFile(f);
         fi.value = '';
       });
       this.fileInput = fi;
@@ -345,6 +408,11 @@ export class ImageStudio {
         const b = btn(UI_ICONS.reset, 'Reset');
         b.addEventListener('click', () => this.reset());
         this.headerBtns.reset = b;
+      }
+      if (o.remove === true) {
+        const b = btn(UI_ICONS.remove, 'Remove');
+        b.addEventListener('click', () => this.clear());
+        this.headerBtns.remove = b;
       }
       if (o.compare !== false) {
         const b = btn(UI_ICONS.compare, 'Compare');
@@ -384,6 +452,7 @@ export class ImageStudio {
     this.badge.textContent = 'Original';
     this.stage.append(this.canvas, this.empty, this.badge);
     this.root.appendChild(this.stage);
+    this.setupStage();
 
     // slider panel
     this.panel = h('div', 'it-panel');
@@ -455,6 +524,132 @@ export class ImageStudio {
     this.syncHeader();
   }
 
+  private openFile(f: File): void {
+    this.opts.onUpload?.(f);
+    this.setImage(f);
+  }
+
+  private setupStage(): void {
+    const o = this.opts;
+    const st = this.stage;
+    const css = (v: string | number) => (typeof v === 'number' ? `${v}px` : v);
+    if (o.imageWidth != null || o.imageHeight != null) {
+      st.classList.add('it-fixed');
+      if (o.imageWidth != null) st.style.width = css(o.imageWidth);
+      if (o.imageHeight != null) st.style.height = css(o.imageHeight);
+      if (o.imageWidth == null) st.style.alignSelf = 'stretch';
+    }
+    if (o.fit === 'cover') st.style.padding = '0';
+
+    // drag & drop a local image
+    if (this.fileInput && o.drop !== false) {
+      st.addEventListener('dragover', (e) => { e.preventDefault(); st.classList.add('it-drop'); });
+      st.addEventListener('dragleave', () => st.classList.remove('it-drop'));
+      st.addEventListener('drop', (e) => {
+        e.preventDefault();
+        st.classList.remove('it-drop');
+        const f = Array.from(e.dataTransfer?.files ?? []).find((x) => x.type.startsWith('image/'));
+        if (f) this.openFile(f);
+      });
+    }
+
+    if (o.zoom === false) return;
+    const rel = (x: number, y: number) => {
+      const r = st.getBoundingClientRect();
+      return { x: x - r.left - r.width / 2, y: y - r.top - r.height / 2 };
+    };
+    st.addEventListener('wheel', (e) => {
+      if (!this.image) return;
+      e.preventDefault();
+      const p = rel(e.clientX, e.clientY);
+      this.zoomAt(this.z * Math.exp(-e.deltaY * (e.ctrlKey ? 0.01 : 0.0015)), p.x, p.y);
+    }, { passive: false });
+
+    st.addEventListener('pointerdown', (e) => {
+      if (!this.image || (e.pointerType === 'mouse' && e.button !== 0)) return;
+      try { st.setPointerCapture(e.pointerId); } catch { /* ignore */ }
+      this.ptrs.set(e.pointerId, { x: e.clientX, y: e.clientY });
+      if (this.ptrs.size === 1) this.tap = { t: this.tap.t, x: e.clientX, y: e.clientY, moved: false };
+      if (this.ptrs.size === 2) {
+        this.tap.moved = true;
+        this.pinch = this.pinchState(rel);
+      }
+      st.classList.toggle('it-panning', this.ptrs.size === 1 && st.classList.contains('it-pan'));
+    });
+    st.addEventListener('pointermove', (e) => {
+      const prev = this.ptrs.get(e.pointerId);
+      if (!prev) return;
+      const cur = { x: e.clientX, y: e.clientY };
+      this.ptrs.set(e.pointerId, cur);
+      if (this.ptrs.size >= 2 && this.pinch) {
+        const n = this.pinchState(rel);
+        const ux = (this.pinch.mx - this.tx) / this.z;
+        const uy = (this.pinch.my - this.ty) / this.z;
+        const nz = Math.min(this.maxZoom(), Math.max(1, this.z * (n.d / this.pinch.d)));
+        this.z = nz;
+        this.tx = n.mx - ux * nz;
+        this.ty = n.my - uy * nz;
+        this.pinch = n;
+        this.applyTransform();
+      } else if (this.ptrs.size === 1) {
+        if (Math.hypot(cur.x - this.tap.x, cur.y - this.tap.y) > 6) this.tap.moved = true;
+        this.tx += cur.x - prev.x;
+        this.ty += cur.y - prev.y;
+        this.applyTransform();
+      }
+    });
+    const end = (e: PointerEvent) => {
+      if (!this.ptrs.delete(e.pointerId)) return;
+      this.pinch = null;
+      st.classList.remove('it-panning');
+      if (e.type === 'pointerup' && this.ptrs.size === 0 && !this.tap.moved) {
+        const now = performance.now();
+        if (now - this.tap.t < 320) {
+          const p = rel(e.clientX, e.clientY);
+          if (this.z > 1.01) this.resetZoom();
+          else this.zoomAt(Math.min(2.5, this.maxZoom()), p.x, p.y);
+          this.tap.t = 0;
+        } else this.tap.t = now;
+      }
+    };
+    st.addEventListener('pointerup', end);
+    st.addEventListener('pointercancel', end);
+  }
+
+  private maxZoom(): number {
+    return Math.max(1, this.opts.maxZoom ?? 8);
+  }
+
+  private pinchState(rel: (x: number, y: number) => { x: number; y: number }) {
+    const [a, b] = Array.from(this.ptrs.values());
+    const m = rel((a.x + b.x) / 2, (a.y + b.y) / 2);
+    return { d: Math.max(1, Math.hypot(a.x - b.x, a.y - b.y)), mx: m.x, my: m.y };
+  }
+
+  /** Zoom to `nz` keeping the stage point (px, py), relative to the centre, fixed. */
+  private zoomAt(nz: number, px: number, py: number): void {
+    nz = Math.min(this.maxZoom(), Math.max(1, nz));
+    const ux = (px - this.tx) / this.z;
+    const uy = (py - this.ty) / this.z;
+    this.tx = px - ux * nz;
+    this.ty = py - uy * nz;
+    this.z = nz;
+    this.applyTransform();
+  }
+
+  /** Clamp the pan so the image never leaves the container, then apply. */
+  private applyTransform(): void {
+    const mx = Math.max(0, (this.dispW * this.z - this.stage.clientWidth) / 2);
+    const my = Math.max(0, (this.dispH * this.z - this.stage.clientHeight) / 2);
+    this.tx = Math.max(-mx, Math.min(mx, this.tx));
+    this.ty = Math.max(-my, Math.min(my, this.ty));
+    this.canvas.style.transform = this.z === 1 && !this.tx && !this.ty ? '' : `translate(${this.tx}px,${this.ty}px) scale(${this.z})`;
+    const pannable = this.opts.zoom !== false && !!this.image && (mx > 0.5 || my > 0.5);
+    this.stage.classList.toggle('it-pan', pannable);
+    // nothing to pan → leave vertical page scrolling to the browser
+    this.stage.style.touchAction = this.opts.zoom === false ? '' : pannable ? 'none' : 'pan-y';
+  }
+
   private def(tool: ToolName): ToolDef {
     return this.enabled.find((t) => t.name === tool)!;
   }
@@ -506,6 +701,7 @@ export class ImageStudio {
     const has = !!this.image;
     if (this.headerBtns.compare) this.headerBtns.compare.disabled = !has;
     if (this.headerBtns.download) this.headerBtns.download.disabled = !has;
+    if (this.headerBtns.remove) this.headerBtns.remove.disabled = !has;
     this.refreshTools();
   }
 
@@ -536,11 +732,22 @@ export class ImageStudio {
     const ch = this.stage.clientHeight - parseFloat(cs.paddingTop) - parseFloat(cs.paddingBottom);
     if (cw <= 0 || ch <= 0) return;
     const { width: iw, height: ih } = this.image;
-    let scale = Math.min(cw / iw, ch / ih);
-    if (!this.opts.upscale) scale = Math.min(scale, 1);
-    const w = Math.floor(iw * scale);
+    let w: number, hh: number;
+    if (this.opts.fit === 'cover') {
+      const scale = Math.max(cw / iw, ch / ih);
+      w = Math.ceil(iw * scale);
+      hh = Math.ceil(ih * scale);
+    } else {
+      let scale = Math.min(cw / iw, ch / ih);
+      if (!this.opts.upscale) scale = Math.min(scale, 1);
+      w = Math.floor(iw * scale);
+      hh = Math.round((w * ih) / iw);
+    }
     this.canvas.style.width = `${w}px`;
-    this.canvas.style.height = `${Math.round((w * ih) / iw)}px`;
+    this.canvas.style.height = `${hh}px`;
+    this.dispW = w;
+    this.dispH = hh;
+    this.applyTransform();
   }
 
   private setCompare(on: boolean): void {

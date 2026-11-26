@@ -20,7 +20,11 @@ export const CSS = `
 .it-hbtn.it-pressed{background:var(--it-accent);border-color:var(--it-accent);color:#fff}
 
 .it-stage{position:relative;flex:1 1 auto;min-height:0;display:flex;align-items:center;justify-content:center;overflow:hidden;background:var(--it-stage);padding:16px}
-.it-canvas{display:block;flex:none;max-width:none;max-height:none;border-radius:4px;box-shadow:0 6px 30px rgba(0,0,0,.25)}
+.it-canvas{display:block;flex:none;max-width:none;max-height:none;border-radius:4px;box-shadow:0 6px 30px rgba(0,0,0,.25);transform-origin:center center;will-change:transform;-webkit-user-drag:none}
+.it-stage.it-pan{cursor:grab}
+.it-stage.it-panning{cursor:grabbing}
+.it-stage.it-drop::after{content:"Drop image to open";position:absolute;inset:8px;display:flex;align-items:center;justify-content:center;border:2px dashed var(--it-accent);border-radius:10px;background:color-mix(in srgb,var(--it-bg) 70%,transparent);color:var(--it-text);pointer-events:none}
+.it-stage.it-fixed{flex:none;align-self:center;max-width:100%}
 .it-badge{position:absolute;top:12px;left:50%;transform:translateX(-50%);padding:4px 10px;border-radius:99px;background:rgba(0,0,0,.6);color:#fff;font-size:12px;pointer-events:none;opacity:0;transition:opacity .15s}
 .it-badge.it-show{opacity:1}
 .it-empty{display:flex;flex-direction:column;align-items:center;gap:12px;color:var(--it-muted);text-align:center}

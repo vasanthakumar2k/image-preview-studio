@@ -13,6 +13,8 @@ export interface ImageStudioHandle {
   getValues(): Values;
   setValues(values: Partial<Values>): void;
   reset(tool?: ToolName): void;
+  clear(): void;
+  resetZoom(): void;
   toBlob(type?: DownloadOptions['type'], quality?: number): Promise<Blob>;
   toDataURL(type?: DownloadOptions['type'], quality?: number): string;
   toCanvas(): HTMLCanvasElement;
@@ -41,6 +43,8 @@ export const ImageStudioEditor = forwardRef<ImageStudioHandle, ImageStudioEditor
       ...latest.current,
       onChange: (v, t) => latest.current.onChange?.(v, t),
       onReady: (i) => latest.current.onReady?.(i),
+      onUpload: (f) => latest.current.onUpload?.(f),
+      onRemove: () => latest.current.onRemove?.(),
       onError: (e) => (latest.current.onError ? latest.current.onError(e) : console.error(e)),
     });
     inst.current = editor;
@@ -61,9 +65,12 @@ export const ImageStudioEditor = forwardRef<ImageStudioHandle, ImageStudioEditor
       tools: options.tools, labels: options.labels, theme: options.theme, accent: options.accent,
       header: options.header, title: options.title, upload: options.upload, reset: options.reset,
       compare: options.compare, download: options.download, height: options.height,
+      remove: options.remove, imageWidth: options.imageWidth, imageHeight: options.imageHeight,
+      fit: options.fit, zoom: options.zoom, drop: options.drop,
     });
   }, [toolsKey, labelsKey, dlKey, options.theme, options.accent, options.header, options.title,
-    options.upload, options.reset, options.compare, options.height]);
+    options.upload, options.reset, options.compare, options.height, options.remove, options.imageWidth,
+    options.imageHeight, options.fit, options.zoom, options.drop]);
 
   useEffect(() => {
     if (options.src && inst.current) inst.current.update({ src: options.src });
@@ -78,6 +85,8 @@ export const ImageStudioEditor = forwardRef<ImageStudioHandle, ImageStudioEditor
     getValues: () => inst.current!.getValues(),
     setValues: (v) => inst.current?.setValues(v),
     reset: (t) => inst.current?.reset(t),
+    clear: () => inst.current?.clear(),
+    resetZoom: () => inst.current?.resetZoom(),
     toBlob: (t, q) => inst.current!.toBlob(t, q),
     toDataURL: (t, q) => inst.current!.toDataURL(t, q),
     toCanvas: () => inst.current!.toCanvas(),
@@ -85,7 +94,7 @@ export const ImageStudioEditor = forwardRef<ImageStudioHandle, ImageStudioEditor
     instance: () => inst.current,
   }), []);
 
-  return <div ref={hostRef} className={className} style={{ width: '100%', height: options.height ?? '100%', ...style }} />;
+  return <div ref={hostRef} className={className} style={{ width: '100%', height: options.height ?? (options.imageHeight != null ? 'auto' : '100%'), ...style }} />;
 });
 
 export default ImageStudioEditor;

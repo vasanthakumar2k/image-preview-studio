@@ -345,6 +345,14 @@ canvas.toBlob((blob) => { /* … */ }, 'image/jpeg', 0.9);
 | `reset` | `true` | Reset-all button |
 | `compare` | `true` | hold-to-compare button |
 | `download` | `true` | Save button, or `{ fileName, type, quality }` |
+| `remove` | `false` | Remove button (clears the image) |
+| `imageWidth` / `imageHeight` | – | fixed size of the image container, e.g. `400` / `'100%'` / `300` |
+| `fit` | `'contain'` | `'contain'` shows the whole image, `'cover'` fills the container (pan to see the rest) |
+| `zoom` | `true` | pinch with two fingers / mouse wheel to zoom, drag with one finger to pan, double-tap to toggle |
+| `maxZoom` | `8` | maximum zoom factor |
+| `drop` | `true` | drag & drop a local image onto the editor |
+| `onUpload(file)` | – | called when a local file is picked / dropped |
+| `onRemove()` | – | called after the image is removed |
 | `upscale` | `false` | let small images grow to fill the space |
 | `previewSize` | `1600` | longest side of the live preview (px) |
 | `activeTool` | first tool | slider shown first |
